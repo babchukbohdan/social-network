@@ -3,6 +3,8 @@ import { Arg, Ctx, Field, InputType, Mutation, ObjectType, Query, Resolver } fro
 import argon2 from 'argon2'
 import { User } from '../entities/User';
 
+import { EntityManager } from '@mikro-orm/postgresql';
+
 @InputType()
 class UsernamePasswordInput {
     @Field()
@@ -71,14 +73,25 @@ export class UserResolver {
 
 
         const hashedPassword = await argon2.hash(password)
-        const user = em.create(User, {username, password: hashedPassword})
-
+        let user;
         try {
-            await em.persistAndFlush(user)
+            const result = await (em as EntityManager).createQueryBuilder(User).getKnexQuery().insert({
+                username,
+                password: hashedPassword,
+                created_at: new Date(),
+                updated_at: new Date()
+            }).returning("*")
 
+            console.log('result[0] =:>> ', result[0]);
+            const retrivedUser = result[0]
+            user = {
+                ...retrivedUser,
+                createdAt: retrivedUser.created_at,
+                updatedAt: retrivedUser.updated_at
+            };
         } catch (error) {
             console.error(error.message)
-            if (error.code === '23505' || error.detail.includes("already exists")) {
+            if (error.detail.includes("already exists")) {
                 return {
                     errors:[{
                         field:"username",
