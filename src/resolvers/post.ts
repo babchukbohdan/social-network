@@ -10,10 +10,11 @@ export class PostResolver {
     }
 
     @Query(() => Post, {nullable: true})
-    post(
+     post(
         @Arg('id') id: number,
         @Ctx() {em}: MyContext
     ): Promise<Post | null> {
+
         return em.findOne(Post, {id})
     }
 
