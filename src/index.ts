@@ -1,5 +1,5 @@
-import { MyContext } from './types';
 import "reflect-metadata";
+import { MyContext } from './types';
 
 import express from 'express'
 import { MikroORM } from '@mikro-orm/core'
@@ -20,12 +20,24 @@ import Redis from "ioredis";
 import cors from 'cors';
 import { sendEmail } from './utils/sendEmail';
 import { User } from './entities/User';
+import {DataSource} from 'typeorm'
+import { Post } from './entities/Post';
 
 const main = async () => {
     // sendEmail('boob@bob.com', 'hello')
-    const orm = await MikroORM.init(mikroConfig)
-    // await orm.em.nativeDelete(User, {})
-    await orm.getMigrator().up()
+    const appDataSource = new DataSource({
+        type: "postgres",
+        host: "localhost",
+        port: 5432,
+        username: "postgres",
+        password: "postgres",
+        database: "lireddit2",
+        synchronize: true,
+        logging: true,
+        entities: [Post, User],
+        subscribers: [],
+        migrations: [],
+    })
 
     const app = express()
 
@@ -63,7 +75,7 @@ const main = async () => {
             validate: false
         }),
         context: ({req, res}): MyContext => ({
-            em: orm.em,
+            dataSource: appDataSource,
             req,
             res,
             redis
